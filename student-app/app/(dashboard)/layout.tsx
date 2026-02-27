@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!profile?.class) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f8f7ff]">
       <Navbar profile={profile as UserProfile} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {children}

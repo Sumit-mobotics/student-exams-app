@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Brain } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -28,16 +29,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <div className="mb-8">
+    <div className="w-full max-w-md animate-scale-in">
+      {/* Card */}
+      <div className="bg-white rounded-3xl shadow-xl shadow-violet-100/50 border border-violet-100 p-8">
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-14 h-14 bg-linear-to-br from-violet-600 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-200">
+            <Brain className="w-7 h-7 text-white" />
+          </div>
+        </div>
+
+        <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Welcome back</h1>
-          <p className="text-slate-600 mt-1">Sign in to continue your preparation</p>
+          <p className="text-slate-500 mt-1.5 text-sm">Sign in to continue your preparation</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Email address
             </label>
             <input
@@ -46,12 +55,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all text-sm bg-slate-50/50"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Password
             </label>
             <input
@@ -60,12 +69,13 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all text-sm bg-slate-50/50"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl animate-fade-in-fast flex items-start gap-2">
+              <span className="mt-0.5">⚠️</span>
               {error}
             </div>
           )}
@@ -73,15 +83,20 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+            className="w-full btn-primary py-3 rounded-xl text-sm mt-2"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing in...
+              </span>
+            ) : 'Sign in'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-600 mt-6">
+        <p className="text-center text-sm text-slate-500 mt-6">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-indigo-600 font-medium hover:underline">
+          <Link href="/signup" className="text-violet-600 font-semibold hover:text-violet-700 transition-colors">
             Sign up free
           </Link>
         </p>

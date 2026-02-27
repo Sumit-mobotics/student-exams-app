@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Zap, CheckCircle } from 'lucide-react'
+import { X, Zap, CheckCircle, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 interface PaywallModalProps {
@@ -12,27 +12,44 @@ interface PaywallModalProps {
 export default function PaywallModal({ onClose, sessionsUsed, freeLimit }: PaywallModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-fade-in-fast"
+        onClick={onClose}
+      />
+
+      {/* Modal card */}
+      <div className="relative bg-white rounded-3xl shadow-2xl shadow-violet-200/40 w-full max-w-md p-7 sm:p-8 animate-scale-in">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-7 h-7 text-amber-600" />
+        {/* Icon */}
+        <div className="flex justify-center mb-5">
+          <div className="w-16 h-16 bg-linear-to-br from-violet-600 to-indigo-500 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-200 animate-float">
+            <Zap className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">You&apos;ve Used Your Free Sessions</h2>
-          <p className="text-slate-600 text-sm mt-2">
-            You&apos;ve completed {sessionsUsed} of {freeLimit} free sessions. Upgrade to keep practising with unlimited access.
+        </div>
+
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-2">You&apos;ve Used Your Free Sessions</h2>
+          <p className="text-slate-500 text-sm leading-relaxed">
+            You&apos;ve completed{' '}
+            <span className="font-semibold text-slate-700">{sessionsUsed}</span> of{' '}
+            <span className="font-semibold text-slate-700">{freeLimit}</span> free sessions.
+            Upgrade to keep practising with unlimited access.
           </p>
         </div>
 
-        <div className="bg-indigo-50 rounded-xl p-4 mb-6">
-          <div className="font-semibold text-indigo-900 mb-3">Premium includes:</div>
+        {/* Features */}
+        <div className="bg-linear-to-br from-violet-50 to-indigo-50 rounded-2xl p-5 mb-6 border border-violet-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-violet-600" />
+            <div className="font-bold text-violet-900 text-sm">Premium includes:</div>
+          </div>
           <ul className="space-y-2">
             {[
               'Unlimited practice sessions',
@@ -41,8 +58,10 @@ export default function PaywallModal({ onClose, sessionsUsed, freeLimit }: Paywa
               'Full sample papers',
               'Progress tracking',
             ].map((f) => (
-              <li key={f} className="flex items-center gap-2 text-sm text-indigo-800">
-                <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+              <li key={f} className="flex items-center gap-2.5 text-sm text-slate-700">
+                <div className="w-4 h-4 bg-violet-100 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-3 h-3 text-violet-600" />
+                </div>
                 {f}
               </li>
             ))}
@@ -52,13 +71,14 @@ export default function PaywallModal({ onClose, sessionsUsed, freeLimit }: Paywa
         <div className="space-y-3">
           <Link
             href="/pricing"
-            className="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors"
+            className="flex items-center justify-center gap-2 w-full btn-primary py-3.5 rounded-xl text-sm"
           >
+            <Zap className="w-4 h-4" />
             Upgrade — Starting ₹99/month
           </Link>
           <button
             onClick={onClose}
-            className="block w-full text-center text-slate-600 hover:text-slate-800 text-sm py-2 transition-colors"
+            className="block w-full text-center text-slate-400 hover:text-slate-600 text-sm py-2 transition-colors"
           >
             Maybe later
           </button>
