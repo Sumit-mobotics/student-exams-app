@@ -37,8 +37,10 @@ export async function POST(req: NextRequest) {
     }
 
     const questionCount = mode === 'sample_paper' ? 25 : mode === 'chapter_test' ? 8 : 10
+    // Pool size: cache 2.5× more questions so each retry draws a fresh random subset
+    const poolSize = mode === 'sample_paper' ? 25 : questionCount * 3
 
-    // Check cache (only for quick/pyq modes, not sample_paper — those should be unique)
+    // Check cache (only for quick/pyq/chapter_test — sample_paper is always fresh)
     if (mode !== 'sample_paper') {
       const { data: cached } = await supabase
         .from('question_cache')
@@ -49,28 +51,30 @@ export async function POST(req: NextRequest) {
         .eq('mode', mode)
         .single()
 
-      if (cached?.questions) {
+      if (cached?.questions && Array.isArray(cached.questions) && cached.questions.length >= questionCount) {
         // Increment session count
         await supabase
           .from('profiles')
           .update({ sessions_used: profile.sessions_used + 1 })
           .eq('id', user.id)
 
-        return NextResponse.json({ questions: cached.questions })
+        // Shuffle the cached pool and return a fresh random subset every time
+        const shuffled = [...cached.questions].sort(() => Math.random() - 0.5)
+        return NextResponse.json({ questions: shuffled.slice(0, questionCount) })
       }
     }
 
-    // Generate with Claude
+    // Generate with AI — produce a larger pool on first run so future retries vary
     const questions = await generateQuestions({
       classNum,
       subject,
       chapter: chapterInfo.name,
       topics: topics || chapterInfo.topics,
-      count: questionCount,
+      count: poolSize,
       mode,
     })
 
-    // Cache the result (only for quick/pyq)
+    // Cache the full pool (only for quick/pyq/chapter_test)
     if (mode !== 'sample_paper') {
       await supabase.from('question_cache').upsert({
         class_num: classNum,
@@ -87,7 +91,9 @@ export async function POST(req: NextRequest) {
       .update({ sessions_used: profile.sessions_used + 1 })
       .eq('id', user.id)
 
-    return NextResponse.json({ questions })
+    // Return a random subset from the generated pool
+    const shuffled = [...questions].sort(() => Math.random() - 0.5)
+    return NextResponse.json({ questions: shuffled.slice(0, questionCount) })
   } catch (error) {
     console.error('Question generation error:', error)
     return NextResponse.json(
