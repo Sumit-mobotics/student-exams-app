@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ExamPaper } from '@/types'
-import { Printer, X, Eye, EyeOff, BookOpen, ChevronLeft } from 'lucide-react'
+import { Download, Eye, EyeOff, BookOpen, ChevronLeft, Loader2 } from 'lucide-react'
 
 interface Props {
   paper: ExamPaper
@@ -21,30 +21,101 @@ const GENERAL_INSTRUCTIONS = [
 
 export default function ExamPaperView({ paper, onClose }: Props) {
   const [showAnswers, setShowAnswers] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const downloadPDF = async () => {
+    setIsDownloading(true)
+
+    // Temporarily hide screen-only elements inside the paper
+    const noPrintEls = Array.from(
+      document.querySelectorAll<HTMLElement>('#exam-paper-printable .no-print')
+    )
+    const answerEls = Array.from(
+      document.querySelectorAll<HTMLElement>('#exam-paper-printable .answer-block')
+    )
+    noPrintEls.forEach(el => { el.style.visibility = 'hidden' })
+    answerEls.forEach(el => { el.style.display = 'none' })
+
+    try {
+      // Dynamic import keeps this client-only and out of the server bundle
+      const html2pdf = (await import('html2pdf.js')).default
+      const element = document.getElementById('exam-paper-printable')
+
+      await html2pdf()
+        .set({
+          margin: [15, 18, 15, 18],
+          filename: `Practice-Paper-Class${paper.classNum}-${paper.subjectName}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            // html2canvas doesn't support modern CSS color functions (oklch, lab, lch)
+            // that Tailwind v4 uses. Fix them before rendering.
+            onclone: (clonedDoc: Document) => {
+              // html2canvas walks every DOM node including SVG icons and tries to
+              // parse their computed `color` value. Tailwind v4 resolves those to
+              // lab()/oklch() via external <link> stylesheets that we can't patch
+              // with regex. Removing all SVGs is the cleanest fix — they are purely
+              // cosmetic icons and are not needed in the PDF output.
+              clonedDoc.querySelectorAll('svg').forEach(svg => svg.remove())
+
+              // Also patch any <style> blocks that contain unsupported color functions,
+              // then inject correct hex mappings so remaining elements render properly.
+              Array.from(clonedDoc.querySelectorAll('style')).forEach(el => {
+                el.textContent = (el.textContent ?? '')
+                  .replace(/oklch\([^)]*\)/g, '#94a3b8')
+                  .replace(/\blab\([^)]*\)/g, '#94a3b8')
+                  .replace(/\blch\([^)]*\)/g, '#94a3b8')
+                  .replace(/\bcolor\(display-p3[^)]*\)/g, '#94a3b8')
+              })
+
+              const fix = clonedDoc.createElement('style')
+              fix.textContent = `
+                :root {
+                  --color-white: #ffffff;
+                  --color-black: #000000;
+                  --color-gray-50: #f9fafb;
+                  --color-gray-100: #f3f4f6;
+                  --color-gray-200: #e5e7eb;
+                  --color-slate-50: #f8fafc;
+                  --color-slate-100: #f1f5f9;
+                  --color-slate-200: #e2e8f0;
+                  --color-slate-300: #cbd5e1;
+                  --color-slate-400: #94a3b8;
+                  --color-slate-500: #64748b;
+                  --color-slate-600: #475569;
+                  --color-slate-700: #334155;
+                  --color-slate-800: #1e293b;
+                  --color-slate-900: #0f172a;
+                  --color-indigo-50: #eef2ff;
+                  --color-indigo-500: #6366f1;
+                  --color-indigo-600: #4f46e5;
+                  --color-emerald-50: #ecfdf5;
+                  --color-emerald-300: #6ee7b7;
+                  --color-emerald-400: #34d399;
+                  --color-emerald-700: #047857;
+                }
+              `
+              clonedDoc.head.appendChild(fix)
+            },
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(element)
+        .save()
+    } finally {
+      noPrintEls.forEach(el => { el.style.visibility = '' })
+      answerEls.forEach(el => { el.style.display = '' })
+      setIsDownloading(false)
+    }
+  }
 
   // Running question number across sections
   let globalQ = 0
 
   return (
     <>
-      {/* Print-only CSS — hides everything except the paper */}
-      <style>{`
-        @media print {
-          body > * { visibility: hidden !important; }
-          #exam-paper-printable,
-          #exam-paper-printable * { visibility: visible !important; }
-          #exam-paper-printable {
-            position: fixed !important;
-            inset: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-          .no-print { display: none !important; }
-          .answer-block { display: none !important; }
-          @page { size: A4 portrait; margin: 15mm 18mm; }
-        }
-      `}</style>
-
       {/* Full-screen overlay */}
       <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto">
 
@@ -75,11 +146,14 @@ export default function ExamPaperView({ paper, onClose }: Props) {
               {showAnswers ? 'Hide Answers' : 'Show Answers'}
             </button>
             <button
-              onClick={() => window.print()}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+              onClick={downloadPDF}
+              disabled={isDownloading}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
             >
-              <Printer className="w-4 h-4" />
-              Download PDF
+              {isDownloading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Download className="w-4 h-4" />}
+              {isDownloading ? 'Generating…' : 'Download PDF'}
             </button>
           </div>
         </div>
@@ -87,7 +161,7 @@ export default function ExamPaperView({ paper, onClose }: Props) {
         {/* Paper content */}
         <div
           id="exam-paper-printable"
-          className="max-w-[780px] mx-auto my-6 bg-white shadow-sm border border-slate-200 px-12 py-10 font-serif text-slate-900"
+          className="max-w-195 mx-auto my-6 bg-white shadow-sm border border-slate-200 px-12 py-10 font-serif text-slate-900"
           style={{ fontFamily: '"Times New Roman", Times, serif' }}
         >
 
@@ -241,15 +315,15 @@ export default function ExamPaperView({ paper, onClose }: Props) {
         {/* Bottom CTA */}
         <div className="no-print text-center pb-8">
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shadow-md"
+            onClick={downloadPDF}
+            disabled={isDownloading}
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm shadow-md"
           >
-            <Printer className="w-4 h-4" />
-            Print or Save as PDF
+            {isDownloading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />}
+            {isDownloading ? 'Generating PDF…' : 'Download PDF'}
           </button>
-          <p className="text-xs text-slate-400 mt-2">
-            In the print dialog, choose &ldquo;Save as PDF&rdquo; as the destination
-          </p>
         </div>
       </div>
     </>
