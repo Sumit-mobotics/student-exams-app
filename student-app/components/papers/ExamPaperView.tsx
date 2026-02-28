@@ -40,6 +40,7 @@ export default function ExamPaperView({ paper, onClose }: Props) {
       // Dynamic import keeps this client-only and out of the server bundle
       const html2pdf = (await import('html2pdf.js')).default
       const element = document.getElementById('exam-paper-printable')
+      if (!element) return
 
       await html2pdf()
         .set({
